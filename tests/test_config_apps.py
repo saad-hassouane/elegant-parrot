@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 import pytest
 
@@ -46,9 +47,12 @@ def test_classify_no_window_is_native():
     assert classify(None, DEFAULTS["apps"]) == "native"
 
 
-def test_terminal_uses_shift_keys_never_plain_ctrl_c():
+def test_terminal_never_uses_plain_ctrl_c():
     t = DEFAULTS["apps"]["terminal"]
-    assert t["copy_key"] == "ctrl+shift+c" and t["paste_key"] == "ctrl+shift+v"
+    if sys.platform == "darwin":  # macOS: Cmd+C is the terminal's copy and does not interrupt the program
+        assert t["copy_key"] == "cmd+c" and t["paste_key"] == "cmd+v"
+    else:
+        assert t["copy_key"] == "ctrl+shift+c" and t["paste_key"] == "ctrl+shift+v"
 
 
 def test_enable_disable_roundtrip_and_comments_preserved(cfg):
@@ -112,4 +116,5 @@ def test_filtered_detector_allow_list():
 
 def test_deep_merge_keeps_defaults():
     m = deep_merge(DEFAULTS, {"apps": {"web": {"enabled": False}}})
-    assert m["apps"]["web"]["enabled"] is False and m["apps"]["web"]["copy_key"] == "ctrl+c"
+    plain_copy = "cmd+c" if sys.platform == "darwin" else "ctrl+c"
+    assert m["apps"]["web"]["enabled"] is False and m["apps"]["web"]["copy_key"] == plain_copy
